@@ -18,6 +18,8 @@ class MyGame {
 
     private:
         SDL_Rect player1 = { 0, 0, 20, 60 };
+      SDL_Rect player2 = { 350, 0, 20, 60 };
+            SDL_Rect ball = { 0, 0, 0, 0 };
 
     public:
         std::vector<std::string> messages;
