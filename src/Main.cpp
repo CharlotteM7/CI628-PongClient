@@ -1,6 +1,7 @@
 #include "SDL_net.h"
 
 #include "MyGame.h"
+#include "SDL_ttf.h"
 
 using namespace std;
 
@@ -39,6 +40,9 @@ static int on_receive(void* socket_ptr) {
                 args.push_back(string(pch));
             }
         }
+       
+       
+
 
         game->on_receive(cmd, args);
 
@@ -167,12 +171,33 @@ int main(int argc, char** argv) {
         exit(4);
     }
 
+   
+
     SDL_CreateThread(on_receive, "ConnectionReceiveThread", (void*)socket);
     SDL_CreateThread(on_send, "ConnectionSendThread", (void*)socket);
+
+
+    //Initialise font
+    if (TTF_Init() == -1) {
+        std::cerr << "TTF_Init: " << TTF_GetError() << std::endl;
+        exit(5);
+    }
+
+    // Load the font
+    TTF_Font* font = TTF_OpenFont("../res/fonts/pong.ttf", 72);
+    if (font == NULL) {
+        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
+        exit(6);
+    }
+    game->setFont(font);
 
     run_game();
 
     delete game;
+
+    // Clean up font
+    TTF_CloseFont(font);
+    TTF_Quit();
 
     // Close connection to the server
     SDLNet_TCP_Close(socket);
@@ -182,6 +207,8 @@ int main(int argc, char** argv) {
 
     // Shutdown SDL
     SDL_Quit();
+
+
 
     return 0;
 }
