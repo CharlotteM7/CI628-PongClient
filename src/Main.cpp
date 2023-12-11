@@ -1,5 +1,4 @@
 #include "SDL_net.h"
-
 #include "MyGame.h"
 #include "SDL_ttf.h"
 
@@ -10,7 +9,9 @@ const Uint16 PORT = 55555;
 
 bool is_running = true;
 
+
 MyGame* game = new MyGame();
+
 
 static int on_receive(void* socket_ptr) {
     TCPsocket socket = (TCPsocket)socket_ptr;
@@ -40,9 +41,6 @@ static int on_receive(void* socket_ptr) {
                 args.push_back(string(pch));
             }
         }
-       
-       
-
 
         game->on_receive(cmd, args);
 
@@ -79,42 +77,62 @@ static int on_send(void* socket_ptr) {
     return 0;
 }
 
+
+
 void loop(SDL_Renderer* renderer) {
     SDL_Event event;
-
+    
     while (is_running) {
         // input
         while (SDL_PollEvent(&event)) {
-            if ((event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && event.key.repeat == 0) {
-                game->input(event);
 
-                switch (event.key.keysym.sym) {
-                    case SDLK_ESCAPE:
-                        is_running = false;
-                        break;
-
-                    default:
-                        break;
+            if (event.type == SDL_MOUSEBUTTONDOWN && game->isMenuActive) {
+                int mouseX, mouseY;
+                SDL_GetMouseState(&mouseX, &mouseY);
+                game->handleMenuClick(mouseX, mouseY);
+            }
+            if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    game->isMenuActive = !game->isMenuActive;
                 }
+                game->input(event);
             }
 
             if (event.type == SDL_QUIT) {
                 is_running = false;
             }
+
+            if (game->shouldExit()) {
+                is_running = false;
+            }
+            if (game->showControls) {
+                game->renderControls(renderer);
+            }
+
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        game->update();
+        if (game->showControls) {
+            game->renderControls(renderer);
+        }
+        else if (game->isMenuActive) {
+            game->renderMenu(renderer);
+        }
+        else {
+            game->update();
+            game->render(renderer);
+        }
 
-        game->render(renderer);
 
         SDL_RenderPresent(renderer);
 
         SDL_Delay(17);
     }
 }
+
+
 
 int run_game() {
     SDL_Window* window = SDL_CreateWindow(
@@ -136,6 +154,7 @@ int run_game() {
         return -1;
     }
 
+    game->init();
     loop(renderer);
 
     return 0;
@@ -155,7 +174,9 @@ int main(int argc, char** argv) {
         exit(2);
     }
 
+   
     IPaddress ip;
+
 
     // Resolve host (ip name + port) into an IPaddress type
     if (SDLNet_ResolveHost(&ip, IP_NAME, PORT) == -1) {
@@ -171,33 +192,12 @@ int main(int argc, char** argv) {
         exit(4);
     }
 
-   
-
     SDL_CreateThread(on_receive, "ConnectionReceiveThread", (void*)socket);
     SDL_CreateThread(on_send, "ConnectionSendThread", (void*)socket);
-
-
-    //Initialise font
-    if (TTF_Init() == -1) {
-        std::cerr << "TTF_Init: " << TTF_GetError() << std::endl;
-        exit(5);
-    }
-
-    // Load the font
-    TTF_Font* font = TTF_OpenFont("../res/fonts/pong.ttf", 72);
-    if (font == NULL) {
-        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
-        exit(6);
-    }
-    game->setFont(font);
 
     run_game();
 
     delete game;
-
-    // Clean up font
-    TTF_CloseFont(font);
-    TTF_Quit();
 
     // Close connection to the server
     SDLNet_TCP_Close(socket);
@@ -207,8 +207,6 @@ int main(int argc, char** argv) {
 
     // Shutdown SDL
     SDL_Quit();
-
-
 
     return 0;
 }
