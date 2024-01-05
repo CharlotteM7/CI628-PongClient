@@ -374,7 +374,6 @@ void MyGame::render(SDL_Renderer* renderer) {
 }
 
 
-
     }
 
 
