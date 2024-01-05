@@ -7,7 +7,7 @@ using namespace std;
 const char* IP_NAME = "localhost";
 const Uint16 PORT = 55555;
 
-bool is_running = true;
+
 
 
 MyGame* game = new MyGame();
@@ -48,7 +48,7 @@ static int on_receive(void* socket_ptr) {
             break;
         }
 
-    } while (received > 0 && is_running);
+    } while (received > 0 && game->is_running);
 
     return 0;
 }
@@ -56,7 +56,7 @@ static int on_receive(void* socket_ptr) {
 static int on_send(void* socket_ptr) {
     TCPsocket socket = (TCPsocket)socket_ptr;
 
-    while (is_running) {
+    while (game->is_running) {
         if (game->messages.size() > 0) {
             string message = "CLIENT_DATA";
 
@@ -81,50 +81,34 @@ static int on_send(void* socket_ptr) {
 
 void loop(SDL_Renderer* renderer) {
     SDL_Event event;
-    
-    while (is_running) {
+
+    while (game->is_running) {
         // input
         while (SDL_PollEvent(&event)) {
-
-            if (event.type == SDL_MOUSEBUTTONDOWN && game->isMenuActive) {
-                int mouseX, mouseY;
-                SDL_GetMouseState(&mouseX, &mouseY);
-                game->handleMenuClick(mouseX, mouseY);
-            }
-            if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
-                if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    game->isMenuActive = !game->isMenuActive;
-                }
+            if ((event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && event.key.repeat == 0) {
                 game->input(event);
+
+                switch (event.key.keysym.sym) {
+                case SDLK_ESCAPE:
+                    game->is_running = false;
+                    break;
+
+                default:
+                    break;
+                }
             }
 
             if (event.type == SDL_QUIT) {
-                is_running = false;
+                game->is_running = false;
             }
-
-            if (game->shouldExit()) {
-                is_running = false;
-            }
-            if (game->showControls) {
-                game->renderControls(renderer);
-            }
-
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        if (game->showControls) {
-            game->renderControls(renderer);
-        }
-        else if (game->isMenuActive) {
-            game->renderMenu(renderer);
-        }
-        else {
-            game->update();
-            game->render(renderer);
-        }
+        game->update();
 
+        game->render(renderer);
 
         SDL_RenderPresent(renderer);
 
@@ -154,7 +138,7 @@ int run_game() {
         return -1;
     }
 
-    game->init();
+    game->init( renderer);
     loop(renderer);
 
     return 0;
