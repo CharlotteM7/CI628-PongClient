@@ -75,6 +75,8 @@ public:
     void send(std::string message);
     void input(SDL_Event& event);
     void update();
+    void renderText(SDL_Renderer* renderer, const std::string& text, int x, int y, SDL_Color color);
+    void renderPlayerScore(SDL_Renderer* renderer, int score, SDL_Color color, int x, int y);
     void render(SDL_Renderer* renderer);
     void setFont(TTF_Font* f) { font = f; }
     void init(SDL_Renderer* renderer);
