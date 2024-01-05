@@ -227,6 +227,28 @@ void MyGame::playPowerUpSound() {
 }
 
 
+void MyGame::renderPlayerScore(SDL_Renderer* renderer, int score, SDL_Color color, int x, int y) {
+    std::string scoreText = std::to_string(score);
+    SDL_Surface* surface = TTF_RenderText_Solid(font, scoreText.c_str(), color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect textRect = { x, y, surface->w, surface->h };
+    SDL_RenderCopy(renderer, texture, NULL, &textRect);
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+}
+
+
+void MyGame::renderText(SDL_Renderer* renderer, const std::string& text, int x, int y, SDL_Color color) {
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect textRect = { x, y, surface->w, surface->h };
+    SDL_RenderCopy(renderer, texture, NULL, &textRect);
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+}
+
+
+
 void MyGame::render(SDL_Renderer* renderer) {
 
     if (gameState == PLAYING) {
@@ -234,29 +256,9 @@ void MyGame::render(SDL_Renderer* renderer) {
             int startY = 100; // Starting Y position for the first line of text
             int lineHeight = 50; // Space between lines
 
-            // Render the first line of text
-            SDL_Surface* surface1 = TTF_RenderText_Solid(font, "UP1: W, DOWN1: S", { 255, 255, 255, 255 });
-            SDL_Texture* texture1 = SDL_CreateTextureFromSurface(renderer, surface1);
-            SDL_Rect textRect1 = { 100, startY, surface1->w, surface1->h };
-            SDL_RenderCopy(renderer, texture1, NULL, &textRect1);
-            SDL_FreeSurface(surface1);
-            SDL_DestroyTexture(texture1);
-
-            // Render the second line of text
-            SDL_Surface* surface2 = TTF_RenderText_Solid(font, "UP2: I, DOWN2: K", { 255, 255, 255, 255 });
-            SDL_Texture* texture2 = SDL_CreateTextureFromSurface(renderer, surface2);
-            SDL_Rect textRect2 = { 100, startY + lineHeight, surface2->w, surface2->h };
-            SDL_RenderCopy(renderer, texture2, NULL, &textRect2);
-            SDL_FreeSurface(surface2);
-            SDL_DestroyTexture(texture2);
-
-            // Render the third line of text
-            SDL_Surface* surface3 = TTF_RenderText_Solid(font, "LEFT3: G, RIGHT3: H", { 255, 255, 255, 255 });
-            SDL_Texture* texture3 = SDL_CreateTextureFromSurface(renderer, surface3);
-            SDL_Rect textRect3 = { 100, startY + 2 * lineHeight, surface3->w, surface3->h };
-            SDL_RenderCopy(renderer, texture3, NULL, &textRect3);
-            SDL_FreeSurface(surface3);
-            SDL_DestroyTexture(texture3);
+            renderText(renderer, "UP1: W, DOWN1: S", 100, startY, { 255, 255, 255, 255 });
+            renderText(renderer, "UP2: I, DOWN2: K", 100, startY + lineHeight, { 255, 255, 255, 255 });
+            renderText(renderer, "RIGHT3: F, RIGHT3: G", 100, startY + lineHeight *2, { 255, 255, 255, 255 });
 
 
 
@@ -266,17 +268,12 @@ void MyGame::render(SDL_Renderer* renderer) {
             int menuY = 200; // Starting Y position for menu items
 
             for (int i = 0; i < 3; i++) {
-                SDL_Color color = (i == currentOption) ? SDL_Color{ 255, 255, 0, 255 } : SDL_Color{ 255, 255, 255, 255 }; // Highlight current option
-                SDL_Surface* surface = TTF_RenderText_Solid(font, menuOptions[i], color);
-                SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-                SDL_Rect textRect = { 350, menuY, surface->w, surface->h };
-                SDL_RenderCopy(renderer, texture, NULL, &textRect);
-                SDL_FreeSurface(surface);
-                SDL_DestroyTexture(texture);
-
+                SDL_Color color = (i == currentOption) ? SDL_Color{ 255, 255, 0, 255 } : SDL_Color{ 255, 255, 255, 255 };
+                renderText(renderer, menuOptions[i], 350, menuY, color);
                 menuY += 50; // Move down for the next option
-
             }
+        
+
         }
 
         else {
@@ -315,66 +312,46 @@ void MyGame::render(SDL_Renderer* renderer) {
                 }
 
             }
+      // Render scores
 
-
-            // Render scores
-
-
-            // Player 1 Score
-            SDL_Color textColorPlayer1 = { 255, 0, 0, 255 };
-            std::string scorePlayer1Text = std::to_string(player1Score);
-            SDL_Surface* surfacePlayer1 = TTF_RenderText_Solid(font, scorePlayer1Text.c_str(), textColorPlayer1);
-            SDL_Texture* texturePlayer1 = SDL_CreateTextureFromSurface(renderer, surfacePlayer1);
-            SDL_Rect textRectPlayer1 = { 50, 50, surfacePlayer1->w, surfacePlayer1->h }; // Position near top-left
-            SDL_RenderCopy(renderer, texturePlayer1, NULL, &textRectPlayer1);
-            SDL_FreeSurface(surfacePlayer1);
-            SDL_DestroyTexture(texturePlayer1);
+      // Player 1 Score
+            renderPlayerScore(renderer, player1Score, { 255, 0, 0, 255 }, 50, 50);
 
             // Player 2 Score
-            SDL_Color textColorPlayer2 = { 0, 0, 255, 255 };
-            std::string scorePlayer2Text = std::to_string(player2Score);
-            SDL_Surface* surfacePlayer2 = TTF_RenderText_Solid(font, scorePlayer2Text.c_str(), textColorPlayer2);
-            SDL_Texture* texturePlayer2 = SDL_CreateTextureFromSurface(renderer, surfacePlayer2);
-            SDL_Rect textRectPlayer2 = { 800 - 50 - surfacePlayer2->w, 50, surfacePlayer2->w, surfacePlayer2->h }; // Position near top-right
-            SDL_RenderCopy(renderer, texturePlayer2, NULL, &textRectPlayer2);
-            SDL_FreeSurface(surfacePlayer2);
-            SDL_DestroyTexture(texturePlayer2);
+            renderPlayerScore(renderer, player2Score, { 0, 0, 255, 255 }, 800 - 50, 50); 
 
             // Player 3 Score
-            SDL_Color textColorPlayer3 = { 0, 255, 0, 255 };
-            std::string scorePlayer3Text = std::to_string(player3Score);
-            SDL_Surface* surfacePlayer3 = TTF_RenderText_Solid(font, scorePlayer3Text.c_str(), textColorPlayer3);
-            SDL_Texture* texturePlayer3 = SDL_CreateTextureFromSurface(renderer, surfacePlayer3);
-            SDL_Rect textRectPlayer3 = { 800 - 375 - surfacePlayer3->w, 50, surfacePlayer3->w, surfacePlayer3->h }; // Position middle
-            SDL_RenderCopy(renderer, texturePlayer3, NULL, &textRectPlayer3);
-            SDL_FreeSurface(surfacePlayer3);
-            SDL_DestroyTexture(texturePlayer3);
+            renderPlayerScore(renderer, player3Score, { 0, 255, 0, 255 }, 800 - 375, 50); 
 
 
         }
     }
- else if (gameState == WIN_SCREEN) {
-     std::string winText = "";
-     if (player1Score >= 10) {
-         winText = "Player 1 Wins!";
-     }
-     else if (player2Score >= 10) {
-         winText = "Player 2 Wins!";
-     }
-     else if (player3Score >= 10) {
-         winText = "Player 3 Wins!";
-     }
+  
 
-     SDL_Surface* surface1 = TTF_RenderText_Solid(font, winText.c_str(), { 255, 255, 255, 255 });
-     SDL_Texture* texture1 = SDL_CreateTextureFromSurface(renderer, surface1);
-     SDL_Rect textRect1 = { (800 - surface1->w) / 2, (600 - surface1->h) / 2, surface1->w, surface1->h }; // Center the text
-     SDL_RenderCopy(renderer, texture1, NULL, &textRect1);
-     SDL_FreeSurface(surface1);
-     SDL_DestroyTexture(texture1);
-}
+    else if (gameState == WIN_SCREEN) {
+        std::string winText = "";
+        if (player1Score >= 10) {
+            winText = "Player 1 Wins!";
+        }
+        else if (player2Score >= 10) {
+            winText = "Player 2 Wins!";
+        }
+        else if (player3Score >= 10) {
+            winText = "Player 3 Wins!";
+        }
 
+        // Calculate text position to center it on the screen
+        int textWidth, textHeight;
+        TTF_SizeText(font, winText.c_str(), &textWidth, &textHeight);
+        int xCenter = (800 - textWidth) / 2;
+        int yCenter = (600 - textHeight) / 2;
 
+        renderText(renderer, winText, xCenter, yCenter, { 255, 255, 255, 255 });
     }
+
+
+
+ }
 
 
 
