@@ -20,11 +20,26 @@ MyGame::~MyGame() {
 
 
 void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
+
+    //// Check for version information command
+    //if (cmd == "VERSION_CHECK") {
+    //    std::string clientVersion = args.at(0);
+    //    if (clientVersion != GAME_VERSION) {
+    //        // Handle version mismatch
+    //        // Display onscreen message
+    //    }
+    //}
+
     //std::cout << "Received command: " << cmd << std::endl;
+
+      //if (cmd == "PLAYER_ID") {
+    //  playerId = args.at(0); // Store the received player ID  
+    //}
 
     try {
         if (cmd == "GAME_DATA") {
             if (args.size() == 5 || args.size() == 8) {
+                // Update game state based on received data
                 game_data.player1Y = std::stoi(args.at(0));
                 game_data.player2Y = std::stoi(args.at(1));
                 game_data.player3X = std::stoi(args.at(2));
@@ -35,7 +50,7 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
                 if (args.size() == 8) {
                     game_data.powerUpX = std::stoi(args.at(5));
                     game_data.powerUpY = std::stoi(args.at(6));
-                    game_data.powerUpActive = std::stoi(args.at(7)) == 1; // Check if active
+                    game_data.powerUpActive = std::stoi(args.at(7)) == 1;
                 }
                 else {
                     game_data.powerUpActive = false;
@@ -47,15 +62,18 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
         }
 
         if (cmd == "SCORES" && args.size() == 3) {
+            // Play score sound and update scores
             if (scoreSound != nullptr) {
                 Mix_PlayChannel(-1, scoreSound, 0);
             }
             player1Score = std::stoi(args.at(0));
             player2Score = std::stoi(args.at(1));
             player3Score = std::stoi(args.at(2));
-        }
-        if (player1Score >= 10 || player2Score >= 10 || player3Score >= 10) {
-            gameState = WIN_SCREEN;
+
+            // Check if any player has won
+            if (player1Score >= 10 || player2Score >= 10 || player3Score >= 10) {
+                gameState = WIN_SCREEN;
+            }
         }
     }
     catch (const std::invalid_argument& e) {
@@ -69,6 +87,7 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
         return;
     }
 }
+
 
 
 
@@ -130,6 +149,36 @@ void MyGame::init(SDL_Renderer* renderer)
         powerUpTexture = SDL_CreateTextureFromSurface(renderer, tempSurface);
         SDL_FreeSurface(tempSurface);
     }
+
+    // Load the bat1
+    SDL_Surface* tempSurfaceBat1 = IMG_Load("../res/image/red.png");
+    if (tempSurfaceBat1 == nullptr) {
+        std::cerr << "Failed to load bat1 image: " << IMG_GetError() << std::endl;
+    }
+    else {
+         bat1Texture = SDL_CreateTextureFromSurface(renderer, tempSurfaceBat1);
+        SDL_FreeSurface(tempSurfaceBat1);
+    }
+
+    // Load the bat2
+    SDL_Surface*  tempSurfaceBat2 = IMG_Load("../res/image/blue.png");
+    if (tempSurfaceBat2 == nullptr) {
+        std::cerr << "Failed to load bat2 image: " << IMG_GetError() << std::endl;
+    }
+    else {
+         bat2Texture = SDL_CreateTextureFromSurface(renderer, tempSurfaceBat2);
+        SDL_FreeSurface(tempSurfaceBat2);
+    }
+
+    // Load the bat3
+    SDL_Surface* tempSurfaceBat3 = IMG_Load("../res/image/green.png");
+    if (tempSurfaceBat3 == nullptr) {
+        std::cerr << "Failed to load bat3 image: " << IMG_GetError() << std::endl;
+    }
+    else {
+       bat3Texture = SDL_CreateTextureFromSurface(renderer, tempSurfaceBat3);
+        SDL_FreeSurface(tempSurfaceBat3);
+    }
    
 }
 
@@ -150,7 +199,7 @@ void MyGame::input(SDL_Event& event) {
             break;
         }
     }
-    
+
     if (isPaused) {
         if (event.type == SDL_KEYDOWN) {
             switch (event.key.keysym.sym) {
@@ -165,14 +214,16 @@ void MyGame::input(SDL_Event& event) {
                 else if (currentOption == CONTROLS) showControls = true;
                 else if (currentOption == EXIT) is_running = false;
                 break;
-            
+
             }
-        
+
         }
     }
+
     else {
 
         switch (event.key.keysym.sym) {
+
         case SDLK_w:
             send(event.type == SDL_KEYDOWN ? "W_DOWN" : "W_UP");
             break;
@@ -195,6 +246,29 @@ void MyGame::input(SDL_Event& event) {
 
     }
 }
+
+void MyGame::createParticle(int x, int y) {
+    Particle p;
+    p.position = { x, y };
+    p.velocity = { rand() % 3 - 1, rand() % 3 - 1 }; // Random velocity
+    p.color = { 255, 255, 255, 255 }; // White color
+    p.lifespan = 20; 
+    particles.push_back(p);
+}
+
+void MyGame::updateParticles() {
+    for (auto& p : particles) {
+        p.position.x += p.velocity.x;
+        p.position.y += p.velocity.y;
+        p.lifespan--;
+    }
+    // Remove dead particles
+    particles.erase(std::remove_if(particles.begin(), particles.end(),
+        [](const Particle& p) { return p.lifespan <= 0; }),
+        particles.end());
+}
+
+
     
 
 void MyGame::update() {
@@ -204,6 +278,9 @@ void MyGame::update() {
 
     ball.x = game_data.ballX;
     ball.y = game_data.ballY;
+
+    createParticle(ball.x + ball.w / 2, ball.y + ball.h / 2);
+    updateParticles();
 
     if (game_data.powerUpActive) {
 
@@ -247,6 +324,18 @@ void MyGame::renderText(SDL_Renderer* renderer, const std::string& text, int x, 
     SDL_DestroyTexture(texture);
 }
 
+void MyGame::renderParticles(SDL_Renderer* renderer) {
+    for (const auto& p : particles) {
+        SDL_SetRenderDrawColor(renderer, p.color.r, p.color.g, p.color.b, p.color.a);
+     
+
+        // Define a small rectangle around the particle's position
+        SDL_Rect particleRect = { p.position.x - 2, p.position.y - 2, 4, 4 }; // 4x4 pixel particle
+
+        SDL_RenderFillRect(renderer, &particleRect); // Fill the rectangle (solid particle)
+        
+    }
+    }
 
 
 void MyGame::render(SDL_Renderer* renderer) {
@@ -285,16 +374,14 @@ void MyGame::render(SDL_Renderer* renderer) {
             }
 
             // Player 1 Bat - Red
-            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red color
-            SDL_RenderFillRect(renderer, &player1);
+      
+            SDL_RenderCopy(renderer, bat1Texture, NULL, &player1); 
 
             // Player 2 Bat - Blue
-            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue color
-            SDL_RenderFillRect(renderer, &player2);
+            SDL_RenderCopy(renderer, bat2Texture, NULL, &player2);
 
             // Player 3 Bat - Green
-            SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green color
-            SDL_RenderFillRect(renderer, &player3);
+            SDL_RenderCopy(renderer, bat3Texture, NULL, &player3);
 
 
             // Render the ball as a filled circle
@@ -312,6 +399,10 @@ void MyGame::render(SDL_Renderer* renderer) {
                 }
 
             }
+
+            // Render particle effect
+            renderParticles(renderer); 
+
       // Render scores
 
       // Player 1 Score
@@ -326,7 +417,7 @@ void MyGame::render(SDL_Renderer* renderer) {
 
         }
     }
-  
+    
 
     else if (gameState == WIN_SCREEN) {
         std::string winText = "";
