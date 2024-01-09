@@ -12,6 +12,7 @@
 #include "SDL_image.h"
 
 
+
 static struct GameData {
     int player1Y = 0;
     int player2Y = 0;
@@ -27,6 +28,13 @@ static struct GameData {
 
 
 
+struct Particle {
+    SDL_Point position;
+    SDL_Point velocity;
+    SDL_Color color;
+    int lifespan;
+};
+
 
 
 
@@ -36,7 +44,7 @@ private:
     SDL_Rect player1{ 800 / 4, 600 / 2 - 30, 20, 100 };
     SDL_Rect player2{ 3 * 800 / 4 - 20, 600 / 2 - 30, 20, 100 };
     SDL_Rect player3{ 800 / 2 - 60 / 2,  600 - 50 - 30, 100, 20 }; // Position at bottom, horizontal bat
-    SDL_Rect ball{ 800 / 2 - 30, 600 / 2 - 30, 20, 20 };
+    SDL_Rect ball{ 800 / 2 - 30, 0, 20 };
     SDL_Rect powerUp{ 800 / 2, 600 / 2, 40, 40 };
 
     TTF_Font* font;
@@ -45,8 +53,11 @@ private:
 
     SDL_Renderer* renderer;
     SDL_Texture* powerUpTexture;
+    SDL_Texture* bat1Texture;
+    SDL_Texture* bat2Texture;
+    SDL_Texture* bat3Texture;
 
-
+ 
     int player1Score;
     int player2Score;
     int player3Score;
@@ -67,6 +78,7 @@ private:
 public:
 
     std::vector<std::string> messages;
+    std::vector<Particle> particles;
     bool is_running = true;
 
 
@@ -81,7 +93,9 @@ public:
     void setFont(TTF_Font* f) { font = f; }
     void init(SDL_Renderer* renderer);
     void playPowerUpSound();
-   
+    void createParticle(int x, int y);
+    void updateParticles();
+    void renderParticles(SDL_Renderer* renderer);
 };
 
 
